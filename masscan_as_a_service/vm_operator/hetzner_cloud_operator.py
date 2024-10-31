@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 from hcloud.images.domain import Image
 from hcloud import Client
 from hcloud.server_types.domain import ServerType
@@ -31,11 +32,16 @@ class HetznerCloudOperator:
         Provision a new VM
         """
         self.logger.debug(f"Creating VM {vm_name}")
+        delete_after = (datetime.now(tz=timezone.utc) + timedelta(hours=1)).strftime('%Y-%m-%dT%H%M%SZ')
         response = self.client.servers.create(
             name=vm_name,
             server_type=ServerType(vm_model),
             ssh_keys=self.client.ssh_keys.get_all(),
-            image=Image(name=vm_os_image))
+            image=Image(name=vm_os_image),
+            labels={
+                'owner': os.environ.get('HETZNER_VM_OWNER', 'unknown'),
+                'delete_after': os.environ.get('HETZNER_VM_DELETE_AFTER', delete_after)
+            })
         response.action.wait_until_finished()
         return response.server
 
