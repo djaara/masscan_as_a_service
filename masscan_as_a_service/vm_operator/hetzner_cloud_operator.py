@@ -1,5 +1,4 @@
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from hcloud.images.domain import Image
 from hcloud import Client
 from hcloud.server_types.domain import ServerType
@@ -21,26 +20,28 @@ class HetznerCloudOperator:
         key = self.client.ssh_keys.get_by_name(key_name)
         self.client.ssh_keys.delete(key)
 
-    def add_new_ssh_key(self, ssh_key_name, ssh_key):
+    def add_new_ssh_key(self, ssh_key_name, ssh_key, owner, delete_after):
         """
         Add new SSH key to Hetzner Cloud Project
         """
-        self.client.ssh_keys.create(ssh_key_name, ssh_key)
+        self.client.ssh_keys.create(ssh_key_name, ssh_key, labels={
+            'owner': owner,
+            'delete_after': delete_after
+        })
 
-    def create_vm(self, vm_name, vm_model, vm_os_image):
+    def create_vm(self, vm_name, vm_model, vm_os_image, owner, delete_after):
         """
         Provision a new VM
         """
         self.logger.debug(f"Creating VM {vm_name}")
-        delete_after = (datetime.now(tz=timezone.utc) + timedelta(hours=1)).strftime('%Y-%m-%dT%H%M%SZ')
         response = self.client.servers.create(
             name=vm_name,
             server_type=ServerType(vm_model),
             ssh_keys=self.client.ssh_keys.get_all(),
             image=Image(name=vm_os_image),
             labels={
-                'owner': os.environ.get('HETZNER_VM_OWNER', 'unknown'),
-                'delete_after': os.environ.get('HETZNER_VM_DELETE_AFTER', delete_after)
+                'owner': owner,
+                'delete_after': delete_after
             })
         response.action.wait_until_finished()
         return response.server

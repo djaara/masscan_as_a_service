@@ -204,16 +204,21 @@ def main() -> None:
                         "\n".join(api_targets.keys())
                         + "\n")
 
+            delete_after = (datetime.datetime.now(tz=datetime.timezone.utc) +
+                            datetime.timedelta(hours=1)).strftime('%Y-%m-%dT%H%M%SZ')
+            delete_after = os.environ.get('HETZNER_VM_DELETE_AFTER', delete_after)
+            owner = os.environ.get('HETZNER_VM_OWNER', 'unknown')
+
             ssh_key_name = 'masscan-' + datetime.date.strftime(datetime.datetime.now(),
                                                                '%Y%m%d-%H%M%S')
             with open(args.ssh_public_key, 'r') as stream:
                 key = stream.read()
-                hcloud.add_new_ssh_key(ssh_key_name, key)
+                hcloud.add_new_ssh_key(ssh_key_name, key, owner, delete_after)
 
             vm_name = 'masscan-' + datetime.date.strftime(datetime.datetime.now(),
                                                           '%Y%m%d-%H%M%S')
 
-            scan_server = hcloud.create_vm(vm_name, provider['vm_model'], provider['vm_os_image'])
+            scan_server = hcloud.create_vm(vm_name, provider['vm_model'], provider['vm_os_image'], owner, delete_after)
             ssh = SshWorker(scan_server.public_net.ipv4.ip, args.ssh_private_key)
             assert ssh.is_alive()
             assert ssh.bootstrap_host().ok
