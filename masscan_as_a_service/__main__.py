@@ -206,8 +206,8 @@ def main() -> None:
 
             delete_after = (datetime.datetime.now(tz=datetime.timezone.utc) +
                             datetime.timedelta(hours=1)).strftime('%Y-%m-%dT%H%M%SZ')
-            delete_after = os.environ.get('HETZNER_VM_DELETE_AFTER', delete_after)
-            owner = os.environ.get('HETZNER_VM_OWNER', 'unknown')
+            delete_after = os.environ.get('VM_DELETE_AFTER', delete_after)
+            owner = os.environ.get('VM_OWNER', 'unknown')
 
             ssh_key_name = 'masscan-' + datetime.date.strftime(datetime.datetime.now(),
                                                                '%Y%m%d-%H%M%S')
